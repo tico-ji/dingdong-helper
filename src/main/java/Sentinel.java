@@ -16,12 +16,12 @@ public class Sentinel {
 
     public static void main(String[] args) {
         //最小订单成交金额 举例如果设置成50 那么订单要超过50才会下单
-        double minOrderPrice = 0;
+        double minOrderPrice = 10;
 
         //执行任务请求间隔时间最小值
-        int sleepMillisMin = 30000;
+        int sleepMillisMin = 10000;
         //执行任务请求间隔时间最大值
-        int sleepMillisMax = 60000;
+        int sleepMillisMax = 30000;
 
         boolean first = true;
         while (!Api.context.containsKey("end")) {
@@ -41,7 +41,9 @@ public class Sentinel {
                     System.err.println("订单金额：" + cartMap.get("total_money").toString() + " 不满足最小金额设置：" + minOrderPrice + " 等待重试");
                     continue;
                 }
-
+                if(!ExtApi.getMultiReserveTimePre()){
+                    continue;
+                }
                 Map<String, Object> multiReserveTimeMap = null;
                 for (int i = 0; i < 3 && multiReserveTimeMap == null; i++) {
                     sleep(RandomUtil.randomInt(500, 2000));
@@ -53,20 +55,23 @@ public class Sentinel {
 
                 Map<String, Object> checkOrderMap = null;
                 for (int i = 0; i < 3 && checkOrderMap == null; i++) {
-                    sleep(RandomUtil.randomInt(500, 2000));
                     checkOrderMap = Api.getCheckOrder(UserConfig.addressId, cartMap, multiReserveTimeMap);
+                    if(checkOrderMap != null){
+                        break;
+                    }
+                    sleep(RandomUtil.randomInt(500, 2000));
                 }
                 if (checkOrderMap == null) {
                     continue;
                 }
 
                 for (int i = 0; i < 3; i++) {
-                    sleep(RandomUtil.randomInt(500, 2000));
                     if (Api.addNewOrder(UserConfig.addressId, cartMap, multiReserveTimeMap, checkOrderMap)) {
                         System.out.println("铃声持续1分钟，终止程序即可，如果还需要下单再继续运行程序");
                         Api.play();
                         break;
                     }
+                    sleep(RandomUtil.randomInt(500, 2000));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
