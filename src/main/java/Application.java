@@ -102,11 +102,18 @@ public class Application {
                 }
             }).start();
         }
+
         for (int i = 0; i < baseTheadSize; i++) {
             new Thread(() -> {
                 while (!Api.context.containsKey("end")) {
                     sleep(RandomUtil.randomInt(sleepMillisMin, sleepMillisMax));
                     if (Api.context.get("cartMap") == null) {
+                        continue;
+                    }
+                    /**
+                     *  uncertain
+                     */
+                    if(!ExtApi.getMultiReserveTimePre()){
                         continue;
                     }
                     Map<String, Object> multiReserveTimeMap = Api.getMultiReserveTime(UserConfig.addressId, Api.context.get("cartMap"));

@@ -1,5 +1,9 @@
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.json.JSONUtil;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -14,6 +18,13 @@ public class AddCartApplication {
 
 
     public static void main(String[] args) {
+
+    }
+
+    /**
+     *  启动库存监控并添加到购物车
+     */
+    private static void stockMonitor(){
         System.out.println(Api.now() + "库存监控启动,本次监控目录:".concat(ExtUserConfig.categoryMap.keySet().stream().map(foo -> ExtUserConfig.categoryMap.get(foo)).collect(Collectors.joining(","))));
         AtomicReference<Integer> i = new AtomicReference<>(0);
         while(true){
@@ -33,6 +44,29 @@ public class AddCartApplication {
                 e.printStackTrace();
             }
         }
+    }
 
+    /**
+     *  备份购物车
+     */
+    private static void createCartSnapshot(){
+        System.out.println(ExtApi.createCartSnapshot());;
+    }
+
+    /**
+     *  恢复购物车
+     */
+    private static void recoverCartBySnapshot(String backup){
+        Map<String,String> backupMap = JSONUtil.parseObj(backup,true).toBean(HashMap.class);
+        if(CollectionUtil.isNotEmpty(backupMap.keySet())){
+            backupMap.keySet().stream().filter(Objects::nonNull).forEach(fooKey -> {
+                ExtApi.addCart(fooKey,backupMap.get(fooKey));
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
     }
 }

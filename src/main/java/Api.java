@@ -49,13 +49,13 @@ public class Api {
      * @param actionName 动作名称
      * @return 是否成功
      */
-    private static boolean isSuccess(JSONObject object, String actionName) {
+    public static boolean isSuccess(JSONObject object, String actionName) {
         Boolean success = object.getBool("success");
         if (success == null) {
             if ("405".equals(object.getStr("code"))) {
-                System.out.println(actionName + "失败:" + "出现此问题有三个可能 1.偶发，无需处理 2.一个账号一天只能下两单  3.不要长时间运行程序，目前已知有人被风控了，暂时未确认风控的因素是ip还是用户或设备相关信息，如果要测试用单次执行模式，并发只能用于6点、8点半的前一分钟，然后执行时间不能超过2分钟，如果买不到就不要再执行程序了，切忌切忌，如果已经被风控的可以尝试过一段时间再试，或者换号");
+                System.out.println(now() + actionName + "失败:" + "出现此问题有三个可能 1.偶发，无需处理 2.一个账号一天只能下两单  3.不要长时间运行程序，目前已知有人被风控了，暂时未确认风控的因素是ip还是用户或设备相关信息，如果要测试用单次执行模式，并发只能用于6点、8点半的前一分钟，然后执行时间不能超过2分钟，如果买不到就不要再执行程序了，切忌切忌，如果已经被风控的可以尝试过一段时间再试，或者换号");
             } else {
-                System.out.println(actionName + "失败,服务器返回无法解析的内容:" + JSONUtil.toJsonStr(object));
+                System.out.println(now() + actionName + "失败,服务器返回无法解析的内容:" + JSONUtil.toJsonStr(object));
             }
             return false;
         }
@@ -63,7 +63,7 @@ public class Api {
             return true;
         }
         if ("您的访问已过期".equals(object.getStr("message"))) {
-            System.err.println("用户信息失效，请确保UserConfig参数准确，并且微信上的叮咚小程序不能退出登录");
+            System.err.println(now() + "用户信息失效，请确保UserConfig参数准确，并且微信上的叮咚小程序不能退出登录");
             context.put("end", new HashMap<>());
             return false;
         }
@@ -76,7 +76,7 @@ public class Api {
         } catch (Exception ignored) {
 
         }
-        System.err.println(actionName + "失败:" + (msg == null || "".equals(msg) ? "未解析返回数据内容，全字段输出:" + JSONUtil.toJsonStr(object) : msg));
+        System.err.println(now() + actionName + "失败:" + (msg == null || "".equals(msg) ? "未解析返回数据内容，全字段输出:" + JSONUtil.toJsonStr(object) : msg));
         return false;
     }
 
@@ -89,7 +89,7 @@ public class Api {
     public static String getAddressId() {
         boolean noAddress = false;
         try {
-            System.out.println("开始获取收货人信息");
+            System.out.println(now() + "开始获取收货人信息");
             HttpRequest httpRequest = HttpUtil.createGet("https://sunquan.api.ddxq.mobi/api/v1/user/address/");
             httpRequest.addHeaders(UserConfig.getHeaders());
             httpRequest.formStr(UserConfig.getBody());
@@ -100,7 +100,7 @@ public class Api {
                 return null;
             }
             JSONArray validAddress = object.getJSONObject("data").getJSONArray("valid_address");
-            System.out.println("获取可用的收货地址条数：" + validAddress.size());
+            System.out.println(now() + "获取可用的收货地址条数：" + validAddress.size());
             for (int i = 0; i < validAddress.size(); i++) {
                 JSONObject address = validAddress.getJSONObject(i);
                 if (address.getBool("is_default")) {
@@ -112,15 +112,15 @@ public class Api {
                     String stationId = address.getJSONObject("station_info").getStr("id");
                     boolean stationsIdSuccess = true;
                     if (!UserConfig.getHeaders().get("ddmc-station-id").equals(stationId)) {
-                        System.err.println("headers中ddmc-station-id不匹配当前收货地址站点id");
+                        System.err.println(now() + "headers中ddmc-station-id不匹配当前收货地址站点id");
                         stationsIdSuccess = false;
                     }
                     if (!UserConfig.getBody().get("station_id").equals(stationId)) {
-                        System.err.println("body中station_id不匹配当前收货地址站点id");
+                        System.err.println(now() + "body中station_id不匹配当前收货地址站点id");
                         stationsIdSuccess = false;
                     }
                     if (stationsIdSuccess) {
-                        System.out.println("站点id配置正常");
+                        System.out.println(now() + "站点id配置正常");
                     }
                     return address.getStr("id");
                 }
@@ -130,7 +130,7 @@ public class Api {
             e.printStackTrace();
         }
         if (noAddress) {
-            System.err.println("没有可用的默认收货地址，请自行登录叮咚设置该站点可用的默认收货地址");
+            System.err.println(now() + "没有可用的默认收货地址，请自行登录叮咚设置该站点可用的默认收货地址");
             context.put("end", new HashMap<>());
         }
         return null;
@@ -154,7 +154,7 @@ public class Api {
             if (!isSuccess(object, "勾选购物车全选按钮")) {
                 return;
             }
-            System.out.println("勾选购物车全选按钮成功");
+            System.out.println(now() + "勾选购物车全选按钮成功");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -222,14 +222,14 @@ public class Api {
                 map.put("front_package_type", newOrderProduct.get("front_package_type"));
                 map.put("front_package_stock_color", newOrderProduct.get("front_package_stock_color"));
                 map.put("front_package_bg_color", newOrderProduct.get("front_package_bg_color"));
-                System.out.println("更新购物车数据成功,订单金额：" + newOrderProduct.get("total_money"));
+                System.out.println(now() + "更新购物车数据成功,订单金额：" + newOrderProduct.get("total_money"));
                 return map;
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         if (noProducts) {
-            System.err.println("购物车无可买的商品");
+            System.err.println(now() + "购物车无可买的商品");
             if (!noProductsContinue) {
                 context.put("end", new HashMap<>());
             }
@@ -269,7 +269,7 @@ public class Api {
                 if (time.getInt("disableType") == 0 && !time.getStr("select_msg").contains("尽快")) {
                     map.put("reserved_time_start", time.get("start_timestamp"));
                     map.put("reserved_time_end", time.get("end_timestamp"));
-                    System.out.println("更新配送时间成功");
+                    System.out.println(now() + "更新配送时间成功");
                     return map;
                 }
             }
@@ -278,7 +278,7 @@ public class Api {
             e.printStackTrace();
         }
         if (noReserveTime) {
-            System.err.println("无可选的配送时间");
+            System.err.println(now() + "无可选的配送时间");
             context.remove("multiReserveTimeMap");
             //此处不停止程序 可在开放之前提前执行
         }
@@ -361,7 +361,7 @@ public class Api {
             map.put("total_money", order.get("total_money"));
             map.put("freight_real_money", order.getJSONArray("freights").getJSONObject(0).getJSONObject("freight").get("freight_real_money"));
             map.put("user_ticket_id", order.getJSONObject("default_coupon").get("_id"));
-            System.out.println("更新订单确认信息成功");
+            System.out.println(now() + "更新订单确认信息成功");
             return map;
         } catch (Exception e) {
             e.printStackTrace();
@@ -456,7 +456,7 @@ public class Api {
         }
         if (submitSuccess) {
             for (int i = 0; i < 10; i++) {
-                System.out.println("恭喜你，已成功下单 当前下单总金额：" + totalMoney);
+                System.out.println(now() + "恭喜你，已成功下单 当前下单总金额：" + totalMoney);
             }
             context.put("success", new HashMap<>());
             context.put("end", new HashMap<>());

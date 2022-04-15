@@ -16,7 +16,7 @@ public class Sentinel {
 
     public static void main(String[] args) {
         //最小订单成交金额 举例如果设置成50 那么订单要超过50才会下单
-        double minOrderPrice = 10;
+        double minOrderPrice = 50;
 
         //执行任务请求间隔时间最小值
         int sleepMillisMin = 10000;
@@ -38,7 +38,7 @@ public class Sentinel {
                     continue;
                 }
                 if (Double.parseDouble(cartMap.get("total_money").toString()) < minOrderPrice) {
-                    System.err.println("订单金额：" + cartMap.get("total_money").toString() + " 不满足最小金额设置：" + minOrderPrice + " 等待重试");
+                    System.err.println(ExtApi.now() + "订单金额：" + cartMap.get("total_money").toString() + " 不满足最小金额设置：" + minOrderPrice + " 等待重试");
                     continue;
                 }
                 if(!ExtApi.getMultiReserveTimePre()){
@@ -67,7 +67,7 @@ public class Sentinel {
 
                 for (int i = 0; i < 3; i++) {
                     if (Api.addNewOrder(UserConfig.addressId, cartMap, multiReserveTimeMap, checkOrderMap)) {
-                        System.out.println("铃声持续1分钟，终止程序即可，如果还需要下单再继续运行程序");
+                        System.out.println(ExtApi.now() + "铃声持续1分钟，终止程序即可，如果还需要下单再继续运行程序");
                         Api.play();
                         break;
                     }

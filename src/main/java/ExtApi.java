@@ -1,3 +1,4 @@
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
@@ -78,10 +79,10 @@ public class ExtApi extends Api{
      *  根据白名单添加至购物车
      */
     public static void addCart(String pid,String name){
-        if(!ExtUserConfig.pidSet.contains(pid)){
-            System.out.println(now() + name + " 不在购物清单之内,跳过...");
-            return;
-        }
+//        if(!ExtUserConfig.pidSet.contains(pid)){
+//            System.out.println(now() + name + " 不在购物清单之内,跳过...");
+//            return;
+//        }
         HttpRequest httpRequest = HttpUtil.createGet(productDetailUrl);
         httpRequest.addHeaders(UserConfig.getHeaders());
         Map<String, String> request = UserConfig.getBody();
@@ -121,6 +122,42 @@ public class ExtApi extends Api{
         }
     }
 
+    /**
+     *  创建购物车快照,返回产品id和名称的kv数据结构,抢单成功后可调用addCart方法快速恢复之前的购物清单
+     */
+    public static String createCartSnapshot(){
+        HttpRequest httpRequest = HttpUtil.createGet("https://maicai.api.ddxq.mobi/cart/index");
+        httpRequest.addHeaders(UserConfig.getHeaders());
+        Map<String, String> request = UserConfig.getBody();
+        request.put("is_load", "1");
+        httpRequest.formStr(request);
+
+        String body = httpRequest.execute().body();
+        JSONObject object = JSONUtil.parseObj(body);
+
+        if (!isSuccess(object, "更新购物车数据")) {
+            System.out.println(now() + "更新购物车失败:" + body);
+            return null;
+        }
+        JSONObject data = object.getJSONObject("data");
+        Map<String,String> cartSnapshot = new HashMap<>();
+        if(Objects.nonNull(data.getJSONObject("product")) && CollectionUtil.isNotEmpty(data.getJSONObject("product").getJSONArray("effective"))){
+            JSONArray effectiveList = data.getJSONObject("product").getJSONArray("effective").getJSONObject(0).getJSONArray("products");
+            if(CollectionUtil.isNotEmpty(effectiveList)){
+                effectiveList.stream().filter(Objects::nonNull).forEach(foo -> cartSnapshot.put(((JSONObject)foo).getStr("id"),((JSONObject)foo).getStr("product_name")));
+            }
+        }
+        if(Objects.nonNull(data.getJSONObject("product")) && CollectionUtil.isNotEmpty(data.getJSONObject("product").getJSONArray("invalid"))){
+            JSONArray invalidList = data.getJSONObject("product").getJSONArray("invalid").getJSONObject(0).getJSONArray("products");
+            if(CollectionUtil.isNotEmpty(invalidList)){
+                invalidList.stream().filter(Objects::nonNull).forEach(foo -> cartSnapshot.put(((JSONObject)foo).getStr("id"),((JSONObject)foo).getStr("product_name")));
+            }
+        }
+        return JSONUtil.toJsonStr(cartSnapshot);
+    }
+    public static void main(String[] args) {
+        System.out.println(createCartSnapshot());
+    }
     /**
      *  检查是否有运力
      */
